@@ -16,19 +16,34 @@ struct Chip8mem {
     }
  }
 
- fn chip8_mem_set(memory: &mut Chip8mem, index: i32, val: u8) {
+ fn chip8_mem_set(memory: &mut Chip8mem, index: i32, val: u8) -> Option<u8> {
+    if index as usize > config::CHIP8_MEMORY_SIZE as usize {
+        return None;
+    }
     memory.memory[index as usize] = val;
- }
+    Some(val)
+}
  
- fn chip8_mem_get(memory: &mut Chip8mem, index: i32) -> u8{
-    memory.memory[index as usize]
+ fn chip8_mem_get(memory: &mut Chip8mem, index: i32) -> Result<u8, &'static str> {
+    match memory.memory.get(index as usize) {
+        Some(value) => Ok(*value),
+        None => Err("out of bound error")
+    }
  }
 
  fn main() -> Result<(), String> {
     let chip8_mem = &mut Chip8mem::new();
-    chip8_mem_set(chip8_mem, 50, b'A');
-    println!("{:x?}", chip8_mem_get(chip8_mem, 50));
+    if chip8_mem_set(chip8_mem, 50, b'A') == None {
+        println!("chip8_mem_set: Out of bound access");
+        std::process::exit(-1);
+    }
 
+    let result = chip8_mem_get(chip8_mem, 50);
+    if result.is_err() {
+        println!("chip8_mem_get: Out of bound access");
+        std::process::exit(-1);
+    }
+    println!("{:x?}", result.unwrap());
     let sdl_context = sdl2::init()?;
     let video_subsystem = sdl_context.video()?;
 
