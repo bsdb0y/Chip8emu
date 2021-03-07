@@ -4,6 +4,20 @@ use sdl2::keyboard::Keycode;
 
 mod config;
 
+struct Chip8 {
+    pub mem: Chip8mem,
+    pub regs: Chip8regs,
+}
+
+impl Chip8 {
+    pub fn new() -> Self {
+        Chip8 {
+            mem: Chip8mem::new(),
+            regs: Chip8regs::new(),
+        }
+    }
+}
+
 struct Chip8mem {
     pub memory: Vec<u8>,
  }
@@ -14,6 +28,28 @@ struct Chip8mem {
             memory: vec![0u8;config::CHIP8_MEMORY_SIZE as usize],
         }
     }
+ }
+
+ struct Chip8regs {
+    pub v: Vec<u8>,
+    pub i: u16,
+    pub delay_timer: u8,
+    pub sound_timer: u8,
+    pub pc: u16,
+    pub sp: u8,
+ }
+
+ impl Chip8regs {
+     pub fn new() -> Self {
+         Chip8regs {
+             v: vec![0u8;config::CHIP8_TOTAL_DATA_REGS as usize],
+             i: 0u16,
+             delay_timer: 0u8,
+             sound_timer: 0u8,
+             pc: 0u16,
+             sp: 0u8,
+         }
+     }
  }
 
  fn chip8_mem_set(memory: &mut Chip8mem, index: i32, val: u8) -> Option<u8> {
@@ -32,13 +68,16 @@ struct Chip8mem {
  }
 
  fn main() -> Result<(), String> {
-    let chip8_mem = &mut Chip8mem::new();
-    if chip8_mem_set(chip8_mem, 50, b'A') == None {
+    let mut chip8 = Chip8::new();
+    
+    chip8.regs.v[0x0f] = 55; //implemented register
+
+    if chip8_mem_set(&mut chip8.mem, 50, b'A') == None {
         println!("chip8_mem_set: Out of bound access");
         std::process::exit(-1);
     }
 
-    let result = chip8_mem_get(chip8_mem, 50);
+    let result = chip8_mem_get(&mut chip8.mem, 50);
     if result.is_err() {
         println!("chip8_mem_get: Out of bound access");
         std::process::exit(-1);
