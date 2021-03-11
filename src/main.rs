@@ -6,13 +6,16 @@ mod config;
 
 struct Chip8 {
     pub mem: Chip8mem,
+    pub stac: Chip8stack,
     pub regs: Chip8regs,
+
 }
 
 impl Chip8 {
     pub fn new() -> Self {
         Chip8 {
             mem: Chip8mem::new(),
+            stac: Chip8stack::new(),
             regs: Chip8regs::new(),
         }
     }
@@ -52,6 +55,34 @@ struct Chip8mem {
      }
  }
 
+struct Chip8stack {
+    pub stack: Vec<u16>,
+}
+
+impl Chip8stack {
+    pub fn new() -> Self {
+        Chip8stack {
+            stack: vec![0u16; config::CHIP8_TOTAL_STACK_DEPTH as usize],
+        }
+    }
+
+    pub fn chip8_stack_inbounds(chip8: &mut Chip8) {
+        assert!((chip8.regs.sp as u16) < config::CHIP8_TOTAL_STACK_DEPTH);
+    }
+
+    pub fn chip8_stack_push(chip8: &mut Chip8, val: u16) {
+        self::Chip8stack::chip8_stack_inbounds(chip8);
+        chip8.stac.stack[chip8.regs.sp as usize] = val;
+        chip8.regs.sp += 1;
+    }
+
+    pub fn chip8_stack_pop(chip8: &mut Chip8) -> u16 {
+        chip8.regs.sp -= 1;
+        self::Chip8stack::chip8_stack_inbounds(chip8);
+        chip8.stac.stack[chip8.regs.sp as usize]
+    }
+}
+
  fn chip8_mem_set(memory: &mut Chip8mem, index: i32, val: u8) -> Option<u8> {
     if index as usize > config::CHIP8_MEMORY_SIZE as usize {
         return None;
@@ -59,6 +90,7 @@ struct Chip8mem {
     memory.memory[index as usize] = val;
     Some(val)
 }
+
  
  fn chip8_mem_get(memory: &mut Chip8mem, index: i32) -> Result<u8, &'static str> {
     match memory.memory.get(index as usize) {
@@ -70,19 +102,11 @@ struct Chip8mem {
  fn main() -> Result<(), String> {
     let mut chip8 = Chip8::new();
     
-    chip8.regs.v[0x0f] = 55; //implemented register
-
-    if chip8_mem_set(&mut chip8.mem, 50, b'A') == None {
-        println!("chip8_mem_set: Out of bound access");
-        std::process::exit(-1);
-    }
-
-    let result = chip8_mem_get(&mut chip8.mem, 50);
-    if result.is_err() {
-        println!("chip8_mem_get: Out of bound access");
-        std::process::exit(-1);
-    }
-    println!("{:x?}", result.unwrap());
+    Chip8stack::chip8_stack_push(&mut chip8, 0xff);
+    Chip8stack::chip8_stack_push(&mut chip8, 0xaa);
+    println!("{:x?}", Chip8stack::chip8_stack_pop(&mut chip8));
+    println!("{:x?}", Chip8stack::chip8_stack_pop(&mut chip8));
+    
     let sdl_context = sdl2::init()?;
     let video_subsystem = sdl_context.video()?;
 
