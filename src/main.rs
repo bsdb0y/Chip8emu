@@ -8,6 +8,7 @@ struct Chip8 {
     pub mem: Chip8mem,
     pub stac: Chip8stack,
     pub regs: Chip8regs,
+    pub keyboard: Chip8keyboard,
 
 }
 
@@ -17,6 +18,7 @@ impl Chip8 {
             mem: Chip8mem::new(),
             stac: Chip8stack::new(),
             regs: Chip8regs::new(),
+            keyboard: Chip8keyboard::new(),
         }
     }
 }
@@ -98,9 +100,63 @@ impl Chip8stack {
         chip8.stac.stack[chip8.regs.sp as usize]
     }
 }
+struct Chip8keyboard {
+    pub keyboard: Vec<bool>,
+}
 
+impl Chip8keyboard {
+    pub fn new() -> Self {
+        Chip8keyboard {
+            keyboard: vec![false; config::CHIP8_TOTAL_KEYS as usize],
+        } 
+    }
 
+    pub fn chip8_keyboard_inbounds(key: u16) {
+        assert!(key < config::CHIP8_TOTAL_KEYS);
+    }
+
+    pub fn chip8_keyboard_map(map: &Vec<char>, key: char) -> i16 {
+        let index = map.iter().position(|&ch| ch == key);
+        match index {
+            Some(value) => value as i16,
+            None => -1,
+        }
+    }
+
+    pub fn chip8_keyboard_is_down(&self, key: u16) -> bool {
+        self.keyboard[key as usize]
+    }
+
+    pub fn chip8_keyboard_down(&mut self, key: u16) {
+        self.keyboard[key as usize] = true;        
+    }
+
+    pub fn chip8_keyboard_up(&mut self, key: u16) {
+        self.keyboard[key as usize] = false;
+    }
+}
  fn main() -> Result<(), String> {
+
+    //TODO: implement the keyboard and keycode
+    let nums = vec![
+        sdl2::keyboard::Keycode::Num0,
+        sdl2::keyboard::Keycode::Num1,
+        sdl2::keyboard::Keycode::Num2,
+        sdl2::keyboard::Keycode::Num3,
+        sdl2::keyboard::Keycode::Num4,
+        sdl2::keyboard::Keycode::Num5,
+        sdl2::keyboard::Keycode::Num6,
+        sdl2::keyboard::Keycode::Num7,
+        sdl2::keyboard::Keycode::Num8,
+        sdl2::keyboard::Keycode::Num9,
+        sdl2::keyboard::Keycode::A,
+        sdl2::keyboard::Keycode::B,
+        sdl2::keyboard::Keycode::C,
+        sdl2::keyboard::Keycode::D,
+        sdl2::keyboard::Keycode::E,
+        sdl2::keyboard::Keycode::F
+        ];
+
     let mut chip8 = Chip8::new();
 
     println!("[+] Implemented registers");
@@ -125,6 +181,15 @@ impl Chip8stack {
     println!("{:x?}", Chip8stack::chip8_stack_pop(&mut chip8));
     println!("{:x?}", Chip8stack::chip8_stack_pop(&mut chip8));
     
+    println!("[+] Implemented keyboard");
+    Chip8keyboard::chip8_keyboard_down(&mut chip8.keyboard, 0x0f);
+    let is_down: bool = Chip8keyboard::chip8_keyboard_is_down(&chip8.keyboard, 0x0f);
+    println!("{:?}", is_down);
+
+    Chip8keyboard::chip8_keyboard_up(&mut chip8.keyboard, 0x0f);
+    let is_down: bool = Chip8keyboard::chip8_keyboard_is_down(&chip8.keyboard, 0x0f);
+    println!("{:?}", is_down);
+
     let sdl_context = sdl2::init()?;
     let video_subsystem = sdl_context.video()?;
 
@@ -153,9 +218,12 @@ impl Chip8stack {
     let mut event_pump = sdl_context.event_pump()?;
     'running: loop {
         for event in event_pump.poll_iter() {
-            if let Event::Quit {..} |
-                            Event::KeyDown { keycode: Some(Keycode::Escape), .. } = event {
-                break 'running;
+            match event {
+                Event::Quit {..} |
+                Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
+                    break 'running;
+                },
+                _ => {}
             }
         }
     }
