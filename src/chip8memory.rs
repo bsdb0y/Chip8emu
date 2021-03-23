@@ -1,4 +1,4 @@
-use crate::Chip8;
+use crate::chip8;
 use crate::config;
 pub struct Chip8mem {
     pub memory: Vec<u8>,
@@ -61,17 +61,17 @@ impl Chip8stack {
         }
     }
 
-    pub fn chip8_stack_inbounds(chip8: &mut Chip8) {
+    pub fn chip8_stack_inbounds(chip8: &mut chip8::Chip8) {
         assert!((chip8.regs.sp as u16) < config::CHIP8_TOTAL_STACK_DEPTH);
     }
 
-    pub fn chip8_stack_push(chip8: &mut Chip8, val: u16) {
+    pub fn chip8_stack_push(chip8: &mut chip8::Chip8, val: u16) {
         self::Chip8stack::chip8_stack_inbounds(chip8);
         chip8.stac.stack[chip8.regs.sp as usize] = val;
         chip8.regs.sp += 1;
     }
 
-    pub fn chip8_stack_pop(chip8: &mut Chip8) -> u16 {
+    pub fn chip8_stack_pop(chip8: &mut chip8::Chip8) -> u16 {
         chip8.regs.sp -= 1;
         self::Chip8stack::chip8_stack_inbounds(chip8);
         chip8.stac.stack[chip8.regs.sp as usize]
